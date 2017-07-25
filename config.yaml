@@ -1,0 +1,27 @@
+---
+id: groonga-seminar-2017-08
+base_name: mroonga-and-pgroonga
+tags:
+- rabbit
+- groonga
+- mroonga
+- pgroonga
+- mysql
+- mariadb
+- postgresql
+presentation_date: 2017-08-01
+version: 2017.8.1.0
+licenses:
+- CC BY-SA 4.0
+slideshare_id: 
+speaker_deck_id: 
+ustream_id: 
+vimeo_id: 
+youtube_id: 
+author:
+  markup_language: :rd
+  name: Kouhei Sutou
+  email: kou@clear-code.com
+  rubygems_user: kou
+  slideshare_user: kou
+  speaker_deck_user: 

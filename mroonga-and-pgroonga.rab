@@ -1,0 +1,30 @@
+= Mroonga・PGroongaを使った全文検索システムの実装方法
+
+: author
+   須藤功平
+: institution
+   株式会社クリアコード
+: content-source
+   MySQL・PostgreSQL上で動かす全文検索エンジン「Groonga」セミナー
+: date
+   2017-08-01
+: allotted-time
+   110m
+: theme
+   groonga
+
+= 全文検索システム\n対象
+
+(('tag:center'))
+(('tag:large'))
+(('tag:margin-bottom * 2'))
+大量のテキスト
+
+  * 例：Wikiのデータ
+  * 例：オフィス文書のテキスト
+
+= 全文検索システム\n目的
+
+  * 必要な情報を
+  * 必要なときに
+  * 活用したい
