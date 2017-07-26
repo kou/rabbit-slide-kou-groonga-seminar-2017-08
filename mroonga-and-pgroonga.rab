@@ -130,6 +130,8 @@ RDBMS経由で\n
     * PostgreSQLに組込→PGoonga
   * 全文検索サーバーとして\n
     単独でも使用可能
+    * RDBMSと全文検索サーバーを併用\n
+      もできる
 
 = Mroonga（むるんが）
 
@@ -137,6 +139,289 @@ RDBMS経由で\n
     * InnoDB・MyISAMなどと同じレイヤー
   * 使用方法
     * (({CREATE TABLE (...) ENGINE=Mroonga}))
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= MySQL組込の全文検索機能
+
+  * MySQL：5.7から使える
+    * InnoDB＋日本語対応パーサー
+  * MariaDB：10.0.15から使える
+    * Mroongaをバンドル
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 全文検索機能の違い\n基本機能
+
+  # RT
+
+  , InnoDB, Mroonga
+
+  AND/OR/NOT対応,○,○
+  ハイライト,×,○
+  周辺テキスト表示,×,○
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= ハイライト\n周辺テキスト表示
+
+  # image
+  # src = images/php-document-search-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 全文検索機能の違い\n高度な機能
+
+  # RT
+
+  , InnoDB, Mroonga
+
+  入力補完,×,○
+  類似文書検索,○,○
+  クエリー展開,○,○
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 全文検索性能の違い\n計測データ
+
+  * 対象：Wikipedia日本語版
+  * レコード数：約185万件
+  * データサイズ：約7GB
+  * メモリー4GB・SSD250GB(('note:（ConoHa）'))
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 検索性能1
+
+(('tag:center'))
+キーワード：テレビアニメ\n
+(('note:（ヒット数：約2万3千件）'))
+
+  # RT
+  delimiter = [|]
+
+  InnoDB ngram | 3m2s
+  InnoDB MeCab | 6m20s
+  Mroonga:((*1*)) | 0.11s
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 検索性能2
+
+(('tag:center'))
+キーワード：データベース\n
+(('note:（ヒット数：約1万7千件）'))
+
+  # RT
+  delimiter = [|]
+
+  InnoDB ngram | 36s
+  InnoDB MeCab:((*1*)) | 0.03s
+  Mroonga:((*2*)) | 0.09s
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 検索性能3
+
+(('tag:center'))
+キーワード：PostgreSQL OR MySQL\n
+(('note:（ヒット数：約400件）'))
+
+  # RT
+  delimiter = [|]
+
+  InnoDB ngram | N/A(Error)
+  InnoDB MeCab:((*1*)) | 0.005s
+  Mroonga:((*2*)) | 0.028s
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 検索性能4
+
+(('tag:center'))
+キーワード：日本\n
+(('note:（ヒット数：約63万件）'))
+
+  # RT
+  delimiter = [|]
+
+  InnoDB ngram | 1.3s
+  InnoDB MeCab | 1.3s
+  Mroonga:((*1*)) | 0.21s
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 検索性能まとめ
+
+  * Mroonga：安定して速い
+    * ((*SQLで使えて機能豊富で速い！*))
+  * InnoDB FTS MeCab
+    * ハマれば速い
+  * InnoDB FTS ngram
+    * 安定して遅い
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 全文検索システムの実装\nMroonga
+
+  * 全文検索
+  * キーワードハイライト
+  * 周辺テキスト表示
+  * オートコンプリート
+  * 関連文書の表示
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= テーブル定義
+
+  # coderay sql
+
+  CREATE TABLE entries (
+    title text,
+    content text,
+    -- 全文検索用インデックス
+    FULLTEXT INDEX (title, content)
+  ) ENGINE=Mroonga
+    DEFAULT CHARSET=utf8mb4;
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= データ挿入
+
+  # coderay sql
+
+  -- 普通に挿入するだけでよい
+  INSERT INTO entries
+    VALUES ('タイトル',
+            '高速に全文検索したいですね！');
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 全文検索
+
+  # coderay sql
+
+  SELECT title FROM entries
+    WHERE -- MATCH AGAINSTで全文検索
+      MATCH (title, content)
+      -- デフォルトORがMySQLの仕様
+      -- 「検索」または「高速」を含むとマッチ
+      AGAINST ('検索 高速'
+               IN BOOLEAN MODE);
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= AND全文検索
+
+  # coderay sql
+
+  MATCH (title, content)
+  -- 各キーワードの前に「+」をつけるとAND
+  -- 「検索」かつ「高速」を含むとマッチ
+  AGAINST ('+検索 +高速'
+           IN BOOLEAN MODE);
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 使いやすいAND全文検索
+
+  # coderay sql
+
+  MATCH (content)
+  -- 最初に「*D+」をつけるとデフォルトAND
+  -- Mroonga独自機能
+  -- 「検索」かつ「高速」を含むとマッチ
+  AGAINST ('*D+ 検索 高速'
+           IN BOOLEAN MODE);
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= ハイライト
+
+  # coderay sql
+
+  SELECT mroonga_highlight_html(
+           title, '*D+ 検索 探す' AS query)
+    -- クエリーからハイライト対象のキーワードを抽出
+    FROM entries
+    WHERE
+      MATCH (content)
+      AGAINST ('*D+ 検索 探す' IN BOOLEAN MODE);
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
 
 = PGroonga\n（ぴーじーるんが）
 
