@@ -159,7 +159,7 @@ RDBMS経由で\n
 
    mroonga
 
-= 全文検索機能の違い\n基本機能
+= 全文検索機能：基本
 
   # RT
 
@@ -187,7 +187,7 @@ RDBMS経由で\n
 
    mroonga
 
-= 全文検索機能の違い\n高度な機能
+= 全文検索機能：高度な機能
 
   # RT
 
@@ -321,6 +321,18 @@ RDBMS経由で\n
 
    mroonga
 
+= 全文検索
+
+  # image
+  # src = images/php-document-search-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
 = テーブル定義
 
   # coderay sql
@@ -329,6 +341,7 @@ RDBMS経由で\n
     title text,
     content text,
     -- 全文検索用インデックス
+    -- よくわからないならデフォルトのまま使うこと！
     FULLTEXT INDEX (title, content)
   ) ENGINE=Mroonga
     DEFAULT CHARSET=utf8mb4;
@@ -392,7 +405,7 @@ RDBMS経由で\n
 
   # coderay sql
 
-  MATCH (content)
+  MATCH (title, content)
   -- 最初に「*D+」をつけるとデフォルトAND
   -- Mroonga独自機能
   -- 「検索」かつ「高速」を含むとマッチ
@@ -407,15 +420,159 @@ RDBMS経由で\n
 
 = ハイライト
 
+  # image
+  # src = images/php-document-search-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= ハイライト
+
   # coderay sql
 
   SELECT mroonga_highlight_html(
-           title, '*D+ 検索 探す' AS query)
+           title, '*D+ 検索 高速' AS query)
     -- クエリーからハイライト対象のキーワードを抽出
     FROM entries
     WHERE
+      MATCH (title, content)
+      AGAINST ('*D+ 検索 高速' IN BOOLEAN MODE);
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= ハイライト結果例
+
+  # coderay html
+
+  <Groonga>で高速全文検索！
+  ↓
+  &lt;Groonga&gt;で ← タグをエスケープ
+  <span class="keyword">高速</span>
+  全文 ↑↓キーワードはclass付け
+  <span class="keyword">検索</span>！
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 周辺テキスト
+
+  # image
+  # src = images/php-document-search-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 周辺テキスト
+
+  # coderay sql
+
+  SELECT mroonga_snippet_html(
+           content, '*D+ 検索 高速' AS query)
+    -- クエリーから対象のキーワードを抽出
+    FROM entries
+    WHERE
+      MATCH (title, content)
+      AGAINST ('*D+ 検索 高速' IN BOOLEAN MODE);
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 周辺テキスト結果例
+
+  # coderay html
+
+  ...<Groonga>で高速全文検索！...
+  ↓
+  <div class="snippet"> ←1つ目
+  ga&gt;で ←タグをエスケープ
+  <span class="keyword">高速</span>
+  全文 ↑↓キーワードはclass付け
+  <span class="keyword">検索/span>！
+  </div>
+  <div class="snippet">...</div> ←2つ目
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 類似文書検索
+
+  * 検索クエリーは文書そのもの
+    * キーワードではない
+  * 関連エントリーの提示に使える
+    * メタデータがあるなら組み合わせる\n
+      →精度向上
+    * メタデータ：タグ・行動履歴など
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 類似文書検索\nインデックス定義
+
+  # coderay sql
+
+  CREATE TABLE entries (
+    -- ...
+    FULLTEXT INDEX (content)
+      -- TokenMecabを使わないと精度がでない
+      -- 必要なときだけカスタマイズ！
+      COMMENT 'tokenizer "TokenMecab"'
+  ) -- ...
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 類似文書検索\n検索方法
+
+  # coderay sql
+
+  SELECT title
+    FROM entries
+    WHERE
       MATCH (content)
-      AGAINST ('*D+ 検索 探す' IN BOOLEAN MODE);
+      ↓ 既存文書を内容をそのまま指定
+      AGAINST ('...Groongaで高速全文検索！...'
+               IN NATURAL LANGUAGE MODE);
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 類似文書検索\n結果例
+
+  クエリー：
+     ...Groongaで高速全文検索！...
+
+  ヒット例：
+     ...Mroongaで高速全文検索！...
 
 == スライドプロパティ
 
@@ -430,3 +587,63 @@ RDBMS経由で\n
   * 使用方法
     * (({CREATE INDEX ...}))\n
       (({USING PGroonga ...}))
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= PostgreSQLの全文検索機能
+
+  * textsearch（組込）
+    * 言語依存
+    * 日本語対応はメンテされていない
+  * pg_trgm（同梱）
+    * 言語非依存：が、ほぼ日本語非対応
+  * pg_bigm（サードパーティー）
+    * 言語非依存：日本語対応
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 全文検索機能：基本
+
+  # RT
+
+  , pg_bigm, PGroonga
+
+  AND/OR/NOT対応,△※1,○
+  ハイライト,△※2,○
+  周辺テキスト表示,△※2,○
+
+(('note:※1 SQLでAND/OR/NOTを組み合わせると実現可能'))
+
+(('note:※2 PostgreSQLが提供する関数で実現可能。ただし、結果をHTMLで出力する用途では使えない。'))
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 全文検索機能：高度な機能
+
+  # RT
+
+  , pg_bigm, PGroonga
+
+  入力補完,×,○
+  類似文書検索,△※,○
+  クエリー展開,×,○
+
+(('note:※ 類似文書検索と言うよりはあいまい検索。'))
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
