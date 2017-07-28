@@ -647,3 +647,107 @@ RDBMS経由で\n
 : groonga-product
 
    pgroonga
+
+= 全文検索性能の違い\n計測データ
+
+  * 対象：Wikipedia日本語版
+  * レコード数：約90万件
+  * データサイズ：約6GB
+  * メモリー32GB・SSD500GB
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 検索性能1
+
+(('tag:center'))
+キーワード：テレビアニメ\n
+(('note:（ヒット数：約2万件）'))
+
+  # RT
+  delimiter = [|]
+
+  pg_bigm | 2.800s
+  PGroonga:((*1*)) | 0.065s
+  Groonga(参考) | 0.038s
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 検索性能2
+
+(('tag:center'))
+キーワード：データベース\n
+(('note:（ヒット数：約1万5千件）'))
+
+  # RT
+  delimiter = [|]
+
+  pg_bigm | 1.300s
+  PGroonga:((*1*)) | 0.049s
+  Groonga(参考) | 0.031s
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 検索性能3
+
+(('tag:center'))
+キーワード：PostgreSQL OR MySQL\n
+(('note:（ヒット数：約300件）'))
+
+  # RT
+  delimiter = [|]
+
+  pg_bigm | 0.049s
+  PGroonga:((*1*)) | 0.002s
+  Groonga(参考) | 0.001s
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 検索性能4
+
+(('tag:center'))
+キーワード：日本\n
+(('note:（ヒット数：約53万件）'))
+
+  # RT
+  delimiter = [|]
+
+  pg_bigm:((*1*)) | 0.479s
+  PGroonga | 0.563s
+  Groonga(参考) | 0.059s
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 検索性能まとめ
+
+  * PGroonga：安定して速い
+    * ((*SQLで使えて機能豊富で速い！*))
+  * pg_bigm
+    * ヒット数が少なければ速い
+    * キーワードが2文字以下なら速い
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
