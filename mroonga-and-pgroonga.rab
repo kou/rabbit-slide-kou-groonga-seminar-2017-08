@@ -133,6 +133,15 @@ RDBMS経由で\n
     * RDBMSと全文検索サーバーを併用\n
       もできる
 
+= Groongaの得意なこと
+
+  * データの追加・更新
+    * 新鮮な情報をすぐに検索可能に！
+    * 更新中も検索性能を落とさない！
+  * 日本語
+    * 開発者が日本人
+    * 便利機能が組み込み
+
 = Mroonga（むるんが）
 
   * MySQLのストレージエンジン
@@ -601,9 +610,42 @@ RDBMS経由で\n
 
    mroonga
 
-= COLLATION
+= 照合順序：COLLATION
 
-TODO
+  * 文字の並び順の規則
+    * 文字が同一かどうかの判定にも利用
+  * MySQL<8適切な日本語規則なし
+    * いわゆる🍣＝🍺問題
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= Mroongaの照合順序
+
+  * MySQL互換のもの
+  * MySQL互換を微調整したもの
+    * 日本語でもいい感じ
+  * Groonga提供のもの
+    * 日本語でもいい感じ
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
+= 微調整した照合順序
+
+  # coderay sql
+  FULLTEXT INDEX (content)
+    COMMENT 'normalizer "${ノーマライザー名}"'
+  ノーマライザー名：
+    NormalizerMySQLUnicode520CI
+      ExceptKanaCI
+            KanaWithVoicedSoundMark
 
 == スライドプロパティ
 
@@ -1285,8 +1327,36 @@ https://pgroonga.github.io/ja/reference/functions/pgroonga-query-expand.html
     -- 同義語のリスト
     -- term自身も含める
     -- 含めない場合はtermが検索禁止語になる
-    synonyms text[]
+    terms text[]
   );
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開\nデータ例
+
+  # coderay sql
+  INSERT INTO synonyms
+    VALUES ('刺身', -- 「刺身」を展開
+            ARRAY['刺身', 'お造り']),
+           ('お造り', -- 「お造り」を展開
+            ARRAY['お造り', '刺身']);
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開\nデータ管理のポイント
+
+  * 普通のテーブルなので管理が楽
+    * 追加・削除・更新が楽
+    * ダンプ・リストアもいつも通り
+    * レプリケーションもいつも通り
 
 == スライドプロパティ
 
@@ -1309,14 +1379,17 @@ https://pgroonga.github.io/ja/reference/functions/pgroonga-query-expand.html
 
    pgroonga
 
-= 同義語展開\nデータ挿入
+= 同義語展開\n確認方法
 
   # coderay sql
-  INSERT INTO synonyms
-    VALUES ('刺身', -- 「刺身」を展開
-            ARRAY['刺身', 'お造り']),
-           ('お造り', -- 「お造り」を展開
-            ARRAY['刺身', 'お造り']);
+
+  SELECT pgroonga.query_expand(
+    'synonyms', -- テーブル名
+    'term', -- 展開対象のカラム名
+    'terms', -- 対応する同義語配列のカラム名
+    '刺身' -- クエリー
+  );
+  -- '((刺身) OR (お造り))'
 
 == スライドプロパティ
 
@@ -1329,8 +1402,12 @@ https://pgroonga.github.io/ja/reference/functions/pgroonga-query-expand.html
   # coderay sql
   SELECT title FROM entries
     WHERE
-      -- title &@~ '(刺身) OR (お造り)'になる
-      title &@~ pgroonga.query_expand('刺身');
+   -- title &@~ '和食 OR ((刺身) OR (お造り))'になる
+      title &@~
+        pgroonga.query_expand('synonyms',
+                              'term',
+                              'terms',
+                              '和食 OR 刺身');
 
 == スライドプロパティ
 
@@ -1404,3 +1481,157 @@ https://pgroonga.github.io/ja/reference/functions/pgroonga-query-expand.html
 
    pgroonga
 
+= 全文検索システムの実装\nまとめ
+
+  * 全文検索
+  * キーワードハイライト
+  * 周辺テキスト表示
+  * 入力補完
+  * 関連文書の表示
+
+= 全文検索システムの実装\n次の一歩
+
+  * 構造化データ対応
+    * オフィス文書・HTMLなど
+  * 対応に必要な処理
+    * テキスト抽出
+    * メタデータ抽出(('note:（例：タイトル・更新日時）'))
+    * スクリーンショット作成(('note:（なおよい）'))
+
+= 抽出ツール
+
+  * Apache Tika
+    * Apache Luceneのサブプロジェクト
+    * 対応フォーマット数が多い
+  * ChupaText
+    * Groongaのサブプロジェクト
+    * スクリーンショット作成対応
+
+= ChupaText
+
+  * 対応フォーマット
+    * Word/Excel/PowerPoint
+    * ODT/ODS/ODP(('note:（OpenDocument）'))
+    * PDF/HTML/XML/CSV/...
+  * インターフェイス
+    * HTTPとコマンドライン
+
+= ChupaText：インストール
+
+  * DockerかVagrantを使うのが楽
+    * (('tag:xx-small'))
+      https://github.com/ranguba/chupa-text-docker
+    * (('tag:xx-small'))
+      https://github.com/ranguba/chupa-text-vagrant
+
+= ChupaText：Docker
+
+  # coderay console
+  % GITHUB=https://github.com
+  % git clone \
+     ${GITHUB}/ranguba/chupa-text-docker.git
+  % cd chupa-text-docker
+  % docker-compose up --build
+
+= ChupaText：使い方
+
+  # coderay console
+  % curl \
+      --form data=@XXX.pdf \
+      http://localhost:20080/extraction.json
+
+= ChupaText：結果例
+
+  # coderay json
+
+  {
+    "mime-type": "application/pdf", # 元データのMIMEタイプ
+    "size": 147159, # メタデータ
+    ...,
+    "texts": [ # 抽出されたテキスト（N個）
+      {
+        "mime-type": "text/plain", # 抽出後のMIMEタイプ
+        ...,
+        "creator": "Adobe Illustrator CS3", # メタデータ
+        "body": "This is sample PDF. ...", # 抽出したテキスト
+        "screenshot": {
+          "mime-type": "image/png", # スクリーンショットのMIMEタイプ
+          "data": "iVBORw...", # Base64にした画像データ
+          "encoding": "base64" # Base64であることを明記
+        }
+      }
+    ]
+  }
+
+= ChupaText：Web UI
+
+  # image
+  # src = images/chupa-text-web-ui-form.png
+  # relative_height = 100
+
+= ChupaText：Web UI抽出例
+
+  # image
+  # src = images/chupa-text-web-ui-extract-metadata.png
+  # relative_height = 100
+
+= ChupaText：Web UI抽出例
+
+  # image
+  # src = images/chupa-text-web-ui-extract-text-and-screenshot.png
+  # relative_height = 100
+
+= ChupaText：Vagrant
+
+  # coderay console
+  % GITHUB=https://github.com
+  % git clone \
+     ${GITHUB}/ranguba/chupa-text-vagrant.git
+  % cd chupa-text-vagrant
+  % vagrant up
+
+(('tag:center'))
+使い方はDocker版と同じ
+
+= ChupaText：活用例
+
+  * 抽出したテキスト
+    * Mroonga・PGroongaへ挿入
+  * 抽出したメタデータ
+    * Mroonga・PGroongaへ挿入
+    * 絞り込みに活用
+  * 作成したスクリーンショット
+    * 検索結果表示時に掲載
+
+= まとめ
+
+  * RDBMS経由で全文検索エンジン
+    * 採用の判断材料を提供
+  * 全文検索システム実装例を紹介
+    * Mroonga・PGroonga両方
+  * 構造化データの対応方法を紹介
+    * ChupaText
+
+= 扱わなかった話題
+
+  * 運用について
+    * 障害対策・レプリケーション
+  * チューニング
+  * Groongaの機能を直接使う方法
+
+(('tag:center'))
+今後のセミナーの話題にするには\n
+実例ベースの方がやりやすいので\n
+あなたのケースを教えてください
+
+= サポートサービス紹介
+
+  * 導入支援(('note:（設計支援・性能検証・移行支援・…）'))
+  * 開発支援\n
+    (('note:（サンプルコード提供・問い合わせ対応・…）'))
+  * 運用支援(('note:（障害対応・チューニング支援・…）'))
+
+問い合わせ先：
+
+(('tag:x-small'))
+https://www.clear-code.com/contact/?type=groonga
