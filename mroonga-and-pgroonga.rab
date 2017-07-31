@@ -9,7 +9,7 @@
 : date
    2017-08-01
 : allotted-time
-   110m
+   105m
 : theme
    .
 
@@ -418,6 +418,27 @@ RDBMS経由で\n
 
    mroonga
 
+= スコアー
+
+  # coderay sql
+
+  SELECT
+    title,
+    -- ここのMATCH AGAINSTはスコアーを返す
+    MATCH (title, content)
+      AGAINST ('*D+ 検索 高速'
+               IN BOOLEAN MODE) AS score
+    FROM entries
+    WHERE -- ...
+    -- スコアーが高い順にソート
+    ORDER BY score DESC LIMIT 10;
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
 = ハイライト
 
   # image
@@ -556,7 +577,7 @@ RDBMS経由で\n
     FROM entries
     WHERE
       MATCH (content)
-      ↓ 既存文書を内容をそのまま指定
+      ↓ 既存文書の内容をそのまま指定
       AGAINST ('...Groongaで高速全文検索！...'
                IN NATURAL LANGUAGE MODE);
 
@@ -744,6 +765,305 @@ RDBMS経由で\n
   * pg_bigm
     * ヒット数が少なければ速い
     * キーワードが2文字以下なら速い
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 全文検索システムの実装\nPGroonga
+
+  * 全文検索
+  * キーワードハイライト
+  * 周辺テキスト表示
+  * オートコンプリート
+  * 関連文書の表示
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 全文検索
+
+  # image
+  # src = images/php-document-search-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= テーブル定義
+
+  # coderay sql
+
+  CREATE TABLE entries (
+    -- プライマリーキーを用意する
+    -- スコアーでソートするために必要
+    id integer PRIMARY KEY,
+    title text,
+    content text
+  );
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= インデックス定義
+
+  # coderay sql
+
+  -- 全文検索用インデックス
+  -- よくわからないなら
+  -- デフォルトのまま使うこと！
+  CREATE INDEX entries_full_text_search
+    ON entries
+    --「USING PGroonga」=「PGroongaを使う」
+    USING PGroonga (id, title, content);
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= データ挿入
+
+  # coderay sql
+
+  -- 普通に挿入するだけでよい
+  INSERT INTO entries
+    VALUES (1,
+            'Groongaで高速全文検索！',
+            '高速に全文検索したいですね！');
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 全文検索
+
+  # coderay sql
+
+  SELECT title FROM entries
+    WHERE
+  -- &@~で全文検索
+  -- 「検索」と「高速」をAND検索
+      title &@~ '検索 高速' OR
+      content &@~ '検索 高速';
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 全文検索：LIKE
+
+  # coderay sql
+
+  SELECT title FROM entries
+    WHERE
+  -- LIKEでもインデックスが効く
+  --＝アプリを書き換えずに高速化可能
+  -- ただし&@~より性能が落ちる
+      title LIKE '%検索%' OR
+      content LIKE '%検索%';
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= スコアー
+
+  # coderay sql
+
+  SELECT
+      title,
+      -- pgroonga.score(テーブル名)で
+      -- スコアーを取得
+      pgroonga.score(entries) AS score
+    FROM entries
+    WHERE -- ...
+    -- スコアーが高い順にソート
+    ORDER BY score DESC LIMIT 10;
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= ハイライト
+
+  # image
+  # src = images/php-document-search-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= ハイライト
+
+  # coderay sql
+
+  SELECT
+    pgroonga.highlight_html(
+      title,
+      -- クエリーから対象キーワードを抽出
+      pgroonga.query_extract_keywords('検索 高速'))
+    FROM entries
+    WHERE title &@~ '検索 高速' OR
+          content &@~ '検索 高速';
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= ハイライト結果例
+
+  # coderay html
+
+  <Groonga>で高速全文検索！
+  ↓
+  &lt;Groonga&gt;で ← タグをエスケープ
+  <span class="keyword">高速</span>
+  全文 ↑↓キーワードはclass付け
+  <span class="keyword">検索</span>！
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 周辺テキスト
+
+  # image
+  # src = images/php-document-search-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 周辺テキスト
+
+  # coderay sql
+
+  SELECT
+    pgroonga.snippet_html(
+      content,
+      -- クエリーから対象キーワードを抽出
+      pgroonga.query_extract_keywords('検索 高速'))
+    FROM entries
+    WHERE title &@~ '検索 高速' OR
+          content &@~ '検索 高速';
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 周辺テキスト結果例
+
+  # coderay html
+
+  ...<Groonga>で高速全文検索！...
+  ↓
+  ARRAY[
+    ↓ 1つ目
+    'ga&gt;で ←タグをエスケープ
+     <span class="keyword">高速</span>
+     全文 ↑↓キーワードはclass付け
+     <span class="keyword">検索/span>！',
+    '...' ← 2つ目
+  ]
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 類似文書検索
+
+  * 検索クエリーは文書そのもの
+    * キーワードではない
+  * 関連エントリーの提示に使える
+    * メタデータがあるなら組み合わせる\n
+      →精度向上
+    * メタデータ：タグ・行動履歴など
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 類似文書検索\nインデックス定義
+
+  # coderay sql
+
+  CREATE INDEX entries_similar_search
+    ON entries
+    USING PGroonga (
+      id,
+      -- pg...v2の指定がポイント
+      content pgroonga.text_full_text_search_ops_v2
+      -- TokenMecabを使うと精度向上
+    ) WITH (tokenizer='TokenMecab');
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 類似文書検索\n検索方法
+
+  # coderay sql
+
+  SELECT title
+    FROM entries
+    WHERE
+      -- &~?で類似文書検索
+      -- 既存文書の内容をそのまま指定
+      content &~?
+        '...Groongaで高速全文検索！...';
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 類似文書検索\n結果例
+
+  クエリー：
+     ...Groongaで高速全文検索！...
+
+  ヒット例：
+     ...PGroongaで高速全文検索！...
 
 == スライドプロパティ
 
