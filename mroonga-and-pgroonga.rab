@@ -312,7 +312,7 @@ RDBMS経由で\n
   * 全文検索
   * キーワードハイライト
   * 周辺テキスト表示
-  * オートコンプリート
+  * 入力補完
   * 関連文書の表示
 
 == スライドプロパティ
@@ -777,7 +777,7 @@ RDBMS経由で\n
   * 全文検索
   * キーワードハイライト
   * 周辺テキスト表示
-  * オートコンプリート
+  * 入力補完
   * 関連文書の表示
 
 == スライドプロパティ
@@ -998,6 +998,250 @@ RDBMS経由で\n
      <span class="keyword">検索/span>！',
     '...' ← 2つ目
   ]
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= オートコンプリート
+
+  # image
+  # src = images/php-document-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完
+
+  # image
+  # src = images/php-document-search.png
+  # relative_height = 100
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n実装方法
+
+  * 以下の検索のOR
+    * 前方一致検索
+    * ヨミガナでの前方一致検索
+    * 緩い全文検索
+  * 表示文字列でソートして提示
+
+(('tag:xx-small'))
+https://pgroonga.github.io/ja/how-to/auto-complete.html
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\nテーブル定義
+
+  # coderay sql
+
+  CREATE TABLE terms (
+    -- 補完候補
+    term text,
+    -- この候補のヨミガナ（N個可）
+    readings text[]
+  );
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\nデータ例
+
+  # coderay sql
+
+  INSERT INTO terms VALUES (
+    '牛乳', -- 補完候補
+    ARRAY[
+     -- ヨミガナはカタカナで指定する
+     'ギュウニュウ',
+     -- 「ミルク」でも補完できるようになる
+     'ミルク'
+    ]
+  );
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\nデータ管理のポイント
+
+  * 普通のテーブルなので管理が楽
+    * 追加・削除・更新が楽
+    * ダンプ・リストアもいつも通り
+    * レプリケーションもいつも通り
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n前方一致用インデックス
+
+  # coderay sql
+
+  CREATE INDEX prefix_search ON terms
+    USING PGroonga
+      -- ...text_term_search...
+    (term pgroonga.text_term_search_ops_v2,
+      -- ...text_array_term_search...
+     readings pgroonga.text_array_term_search_ops_v2);
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n緩い全文検索用
+
+  # coderay sql
+
+  CREATE INDEX loose_search ON terms
+    USING PGroonga
+    -- ...text_full_text_search...
+    (term pgroonga.text_full_text_search_ops_v2)
+    -- 緩い全文検索用トークナイザー
+    WITH (tokenizer='TokenBigramSplitSymbolAlphaDigit');
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n検索方法
+
+  # coderay sql
+
+  SELECT term FROM terms
+          -- 前方一致検索
+    WHERE term &^ '${入力}' OR
+          -- ローマ字で前方一致検索
+          readings &^~ '${入力}' OR
+          -- 緩い全文検索
+          term &@ '${入力}'
+    ORDER BY term LIMIT 10; -- ソート
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n検索例：漢字1
+
+  # coderay sql
+
+  -- ユーザーが「牛」を入力した場合
+  SELECT term FROM terms
+          -- 前方一致検索（ヒット）
+    WHERE term &^ '牛' OR
+    -- ヨミガナで前方一致検索
+          readings &^~ '牛' OR
+          -- 緩い全文検索（ヒット）
+          term &@ '牛'
+    ORDER BY term LIMIT 10; -- ソート
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n検索例：漢字2
+
+  # coderay sql
+
+  -- ユーザーが「乳」を入力した場合
+  SELECT term FROM terms
+          -- 前方一致検索
+    WHERE term &^ '乳' OR
+    -- ヨミガナで前方一致検索
+          readings &^~ '乳' OR
+          -- 緩い全文検索（ヒット）
+          term &@ '乳'
+    ORDER BY term LIMIT 10; -- ソート
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n検索例：カタカナ
+
+  # coderay sql
+
+  -- ユーザーが「ギュウ」を入力した場合
+  SELECT term FROM terms
+          -- 前方一致検索
+    WHERE term &^ 'ギュウ' OR
+  -- ヨミガナで前方一致検索（ヒット）
+          readings &^~ 'ギュウ' OR
+          -- 緩い全文検索
+          term &@ 'ギュウ'
+    ORDER BY term LIMIT 10; -- ソート
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n検索例：ひらがな
+
+  # coderay sql
+
+  -- ユーザーが「ぎゅう」を入力した場合
+  SELECT term FROM terms
+          -- 前方一致検索
+    WHERE term &^ 'ぎゅう' OR
+  -- ヨミガナで前方一致検索（ヒット）
+          readings &^~ 'ぎゅう' OR
+          -- 緩い全文検索
+          term &@ 'ぎゅう'
+    ORDER BY term LIMIT 10; -- ソート
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 入力補完\n検索例：ローマ字
+
+  # coderay sql
+
+  -- ユーザーが「gyu」を入力した場合
+  SELECT term FROM terms
+          -- 前方一致検索
+    WHERE term &^ 'gyu' OR
+  -- ヨミガナで前方一致検索（ヒット）
+          readings &^~ 'gyu' OR
+          -- 緩い全文検索
+          term &@ 'gyu'
+    ORDER BY term LIMIT 10; -- ソート
 
 == スライドプロパティ
 
