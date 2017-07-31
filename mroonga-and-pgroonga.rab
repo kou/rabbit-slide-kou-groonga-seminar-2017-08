@@ -601,6 +601,16 @@ RDBMS経由で\n
 
    mroonga
 
+= COLLATION
+
+TODO
+
+== スライドプロパティ
+
+: groonga-product
+
+   mroonga
+
 = PGroonga\n（ぴーじーるんが）
 
   * PostgreSQLのインデックス
@@ -1005,18 +1015,6 @@ RDBMS経由で\n
 
    pgroonga
 
-= オートコンプリート
-
-  # image
-  # src = images/php-document-search.png
-  # relative_height = 100
-
-== スライドプロパティ
-
-: groonga-product
-
-   pgroonga
-
 = 入力補完
 
   # image
@@ -1242,6 +1240,97 @@ https://pgroonga.github.io/ja/how-to/auto-complete.html
           -- 緩い全文検索
           term &@ 'gyu'
     ORDER BY term LIMIT 10; -- ソート
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開
+
+  * 同義語
+    * 同じ意味だが表記が異なる語
+    * 例：「刺身」と「お造り」
+  * どの表記でもヒットして欲しい
+    * 同義語展開→同義語すべてでOR検索
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開\n実装方法
+
+  * 同義語管理テーブルを作成
+  * クエリー内の同義語を展開
+  * 展開後のクエリーで検索
+
+(('tag:xx-small'))
+https://pgroonga.github.io/ja/reference/functions/pgroonga-query-expand.html
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開\nテーブル定義
+
+  # coderay sql
+  CREATE TABLE synonyms (
+    -- 展開対象の語
+    term text,
+    -- 同義語のリスト
+    -- term自身も含める
+    -- 含めない場合はtermが検索禁止語になる
+    synonyms text[]
+  );
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開\nインデックス定義
+
+  # coderay sql
+  CREATE INDEX synonym_search ON synonyms
+    USING PGroonga
+    -- ...text_term_search...
+    -- termで完全一致検索をするため
+    (term pgroonga.text_term_search_ops_v2);
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開\nデータ挿入
+
+  # coderay sql
+  INSERT INTO synonyms
+    VALUES ('刺身', -- 「刺身」を展開
+            ARRAY['刺身', 'お造り']),
+           ('お造り', -- 「お造り」を展開
+            ARRAY['刺身', 'お造り']);
+
+== スライドプロパティ
+
+: groonga-product
+
+   pgroonga
+
+= 同義語展開\n検索方法
+
+  # coderay sql
+  SELECT title FROM entries
+    WHERE
+      -- title &@~ '(刺身) OR (お造り)'になる
+      title &@~ pgroonga.query_expand('刺身');
 
 == スライドプロパティ
 
